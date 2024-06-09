@@ -43,12 +43,20 @@ async function servidor() {
 
         app.post("/participants", async(req, res)=>{
             const {body:nome} = req
+            
             try{
-                
                 await nomeSchema.validateAsync(nome, {abortEarly:false})
+                const usuarioExiste = await banco.collection("usuarios").findOne({name: nome.name})
+                console.log("usuario existe: ", usuarioExiste)
+                if(usuarioExiste){
+                    res.status(409).send("Um usuário com esse nome já está online")
+                    console.log(chalk.red("Um usuário com esse nome já está online"))
+                    return
+                }
+
                 await banco.collection("usuarios").insertOne({...nome, lastStatus: Date.now()})
                 console.log("usuário salvo com sucesso")
-                res.sendStatus(200)
+                res.sendStatus(201)
 
             }catch(e){
                 
