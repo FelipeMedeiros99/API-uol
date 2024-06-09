@@ -33,7 +33,7 @@ async function conexaoBanco() {
 
 
 async function servidor() {
-    console.clear()
+    
     try {
         const banco = await conexaoBanco()
 
@@ -47,7 +47,6 @@ async function servidor() {
             try{
                 await nomeSchema.validateAsync(nome, {abortEarly:false})
                 const usuarioExiste = await banco.collection("usuarios").findOne({name: nome.name})
-                console.log("usuario existe: ", usuarioExiste)
                 if(usuarioExiste){
                     res.status(409).send("Um usuário com esse nome já está online")
                     console.log(chalk.red("Um usuário com esse nome já está online"))
@@ -66,6 +65,32 @@ async function servidor() {
             }
         })
 
+        app.get("/messages", async (req, res)=>{
+            const {limit} =req.query
+            const {user} = req.headers
+            console.log('limite: ', limit)
+            if(limit){
+                try{
+                    const mensagens = await banco.collection("mensagens").find().toArray()
+                    console.log("mensagens: ", mensagens)
+                    res.sendStatus(200)
+                    // if(limit){
+                    //     limit = parseInt(limit)
+                    //     mensagen
+                    //     res.send(limit)
+                    // }
+
+
+                }catch(e){
+                    res.status(400).send("erro ao buscar mensagens", e)
+                }
+            }
+
+
+            
+        })
+
+
         app.listen(5000, console.log(chalk.cyan("Servidor funcionando")))
 
     }catch(e){
@@ -73,4 +98,5 @@ async function servidor() {
     }
 }
 
+console.clear()
 servidor()
