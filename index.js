@@ -99,8 +99,14 @@ async function servidor() {
 
         app.get("/messages", async (req, res)=>{
             const {limit} = req.query
+            const {user} = req.headers
             try{
-                const mensagens = await banco.collection("mensagens").find().toArray()
+                const mensagens = await banco.collection("mensagens").find({
+                    $or: [
+                        {to: {$in : ["Todos", user]}},
+                        {from: user}
+                        ]
+                }).toArray()
                 if(limit!==undefined){
                     mensagens.reverse()
                     const mensagensFiltradas = mensagens.slice(0, Number(limit)).reverse()
