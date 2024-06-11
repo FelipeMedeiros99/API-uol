@@ -37,6 +37,7 @@ async function conexaoBanco() {
 }
 
 
+
 async function servidor() {
     
     console.clear()
@@ -47,6 +48,18 @@ async function servidor() {
         const app = express()
         app.use(cors())
         app.use(json())
+
+        async function removeUsuarioInativo(){
+            const tempoAtual = Date.now() 
+            const tempoMaximoInativo = tempoAtual - 20 * 60 * 1000
+
+            await banco.collection("usuarios").deleteMany({lastStatus: {$lt: tempoMaximoInativo}})
+
+            // console.log(tempoAtual)
+        }
+
+        setInterval(removeUsuarioInativo, 5000)
+
 
         app.post("/participants", async(req, res)=>{
             const {body:nome} = req
@@ -117,6 +130,21 @@ async function servidor() {
 
             }catch(e){
                 res.send(`Erro ao carregar mensagens: ${e}`)
+            }
+        })
+
+        app.post("/status", async(req, res)=>{
+            const {user} = req.headers
+            try{
+                await banco.collection("usuarios").updateOne({name:user}, {$set: {lastStatus: Date.now()}})
+                const nomeUsuario = await banco.collection("usuarios").findOne({name:user})
+                if(nomeUsuario===null){
+                    res.sendStatus(404)
+                    return
+                }
+                res.send(nomeUsuario).status(200)
+            }catch(e){
+                res.send(`Erro ao carregar usuários ${e}`).status(400)
             }
         })
 
