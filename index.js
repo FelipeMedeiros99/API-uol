@@ -58,7 +58,7 @@ async function servidor() {
             // console.log(tempoAtual)
         }
 
-        setInterval(removeUsuarioInativo, 5000)
+        setInterval(removeUsuarioInativo, 60000)
 
 
         app.post("/participants", async(req, res)=>{
