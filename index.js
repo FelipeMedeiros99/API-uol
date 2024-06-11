@@ -4,7 +4,7 @@ import dotenv from "dotenv"
 import { MongoClient } from "mongodb"
 import cors from "cors"
 import Joi from "joi"
-
+import dayjs from "dayjs"
 
 dotenv.config()
 const LINK = process.env.LINK
@@ -15,6 +15,11 @@ const nomeSchema = Joi.object({
     "name": Joi.string().min(2).required() 
 })
 
+const mensagemSchema = Joi.object({
+    "to": Joi.string().required(),
+    "text": Joi.string().required(),
+    "type": Joi.valid("message", "private_message").required()
+})
 
 
 async function conexaoBanco() {
@@ -33,6 +38,8 @@ async function conexaoBanco() {
 
 
 async function servidor() {
+    
+    console.clear()
     
     try {
         const banco = await conexaoBanco()
@@ -65,38 +72,40 @@ async function servidor() {
             }
         })
 
-        app.get("/messages", async (req, res)=>{
-            const {limit} =req.query
-            const {user} = req.headers
-            console.log('limite: ', limit)
-            if(limit){
-                try{
-                    const mensagens = await banco.collection("mensagens").find().toArray()
-                    console.log("mensagens: ", mensagens)
-                    res.sendStatus(200)
-                    // if(limit){
-                    //     limit = parseInt(limit)
-                    //     mensagen
-                    //     res.send(limit)
-                    // }
-
-
-                }catch(e){
-                    res.status(400).send("erro ao buscar mensagens", e)
-                }
+        app.get("/participants", async(req, res)=>{
+            try{
+                const usuarios = await banco.collection("usuarios").find().toArray()
+                res.status(200).send(usuarios)
+            }catch(e){
+                res.status(404).send("Erro ao buscar usuários")
             }
+        })
 
+        app.post("/messages", async (req, res)=>{
+            const {body:mensagem} = req
+            const {user} = req.headers
 
-            
+            try{
+                await mensagemSchema.validateAsync(mensagem, {abortEarly:false})
+                const data = dayjs()
+                const time = `${data["$H"]}:${data["$m"]}:${data["$s"]}`
+
+                await banco.collection("mensagens").insertOne({...mensagem, from:user, time})        
+                res.sendStatus(200)
+    
+            }catch(e){
+                res.send("Erro ao enviar mensagem", e)
+            }
         })
 
 
-        app.listen(5000, console.log(chalk.cyan("Servidor funcionando")))
+
+
+        app.listen(PORT, console.log(chalk.cyan("Servidor funcionando")))
 
     }catch(e){
         console.log(chalk.red("Erro ao conectar o banco de dados: ", e))
     }
 }
 
-console.clear()
 servidor()
