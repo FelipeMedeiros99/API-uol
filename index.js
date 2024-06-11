@@ -89,17 +89,30 @@ async function servidor() {
                 await mensagemSchema.validateAsync(mensagem, {abortEarly:false})
                 const data = dayjs()
                 const time = `${data["$H"]}:${data["$m"]}:${data["$s"]}`
-
                 await banco.collection("mensagens").insertOne({...mensagem, from:user, time})        
                 res.sendStatus(200)
     
             }catch(e){
-                res.send("Erro ao enviar mensagem", e)
+                res.send(`Erro ao enviar mensagem: ${e}`).status(400)
             }
         })
 
+        app.get("/messages", async (req, res)=>{
+            const {limit} = req.query
+            try{
+                const mensagens = await banco.collection("mensagens").find().toArray()
+                if(limit!==undefined){
+                    mensagens.reverse()
+                    const mensagensFiltradas = mensagens.slice(0, Number(limit)).reverse()
+                    res.send(mensagensFiltradas).status(200)
+                    return
+                }
+                res.send(mensagens).status(200)
 
-
+            }catch(e){
+                res.send(`Erro ao carregar mensagens: ${e}`)
+            }
+        })
 
         app.listen(PORT, console.log(chalk.cyan("Servidor funcionando")))
 
@@ -107,5 +120,6 @@ async function servidor() {
         console.log(chalk.red("Erro ao conectar o banco de dados: ", e))
     }
 }
+
 
 servidor()
